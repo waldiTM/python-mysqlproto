@@ -24,6 +24,6 @@ class IntLengthEncoded:
 
 class StringLengthEncoded:
     @staticmethod
-    def write(self, data):
-        pass
-
+    def write(data):
+        l = IntLengthEncoded.write(len(data))
+        return l + data

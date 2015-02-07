@@ -1,6 +1,6 @@
 import pytest
 
-from .types import IntLengthEncoded
+from .types import IntLengthEncoded, StringLengthEncoded
 
 def test_IntLengthEncoded_write():
     w = IntLengthEncoded.write
@@ -17,3 +17,8 @@ def test_IntLengthEncoded_write():
         w(2**64)
     with pytest.raises(ValueError):
         w(-1)
+
+def test_StringLengthEncoded_write():
+    w = StringLengthEncoded.write
+    assert w(b'')  == b'\x00'
+    assert w(b'a') == b'\x01a'
