@@ -10,7 +10,7 @@ class OK:
         self.warnings = warnings
         self.info = info
 
-    def write(self, stream, seq):
+    def write(self, stream, seq=None):
         status_warnings = struct.pack('<HH', self.status.int, self.warnings)
 
         packet = [
@@ -33,7 +33,7 @@ class ERR:
         self.error = error
         self.error_msg = error_msg
 
-    def write(self, stream, seq):
+    def write(self, stream, seq=None):
         error = struct.pack('<H1s5s', self.error, b'#', self.sql_state.encode('ascii'))
 
         packet = [
@@ -53,13 +53,12 @@ class EOF:
         self.status = status
         self.warnings = warnings
 
-    def write(self, stream, seq):
+    def write(self, stream, seq=None):
         status_warnings = struct.pack('<HH', self.warnings, self.status.int)
 
         packet = [
             b'\xfe',
             status_warnings,
-            self.info.encode('ascii'),
         ]
 
         p = b''.join(packet)

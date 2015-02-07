@@ -2,9 +2,10 @@ import asyncio
 import logging
 
 from mysqlproto.protocol import start_mysql_server
-from mysqlproto.protocol.base import OK, ERR
+from mysqlproto.protocol.base import OK, ERR, EOF
 from mysqlproto.protocol.flags import Capability
 from mysqlproto.protocol.handshake import HandshakeV10, HandshakeResponse41, AuthSwitchRequest
+from mysqlproto.protocol.query import ColumnDefinition, ColumnDefinitionList, ResultSet
 
 
 @asyncio.coroutine
@@ -55,7 +56,15 @@ def handle_server(server_reader, server_writer):
         elif cmd == 3:
             query = (yield from packet.read()).decode('ascii')
             print("<=   query:", query)
-            result = OK(capability, handshake.status)
+
+            if query == 'select 1':
+                ColumnDefinitionList((ColumnDefinition('database'),)).write(server_writer, 1)
+                EOF(capability, handshake.status).write(server_writer)
+                ResultSet(('test',)).write(server_writer)
+                result = EOF(capability, handshake.status)
+                seq = None
+            else:
+                result = OK(capability, handshake.status)
 
         else:
             result = ERR(capability)

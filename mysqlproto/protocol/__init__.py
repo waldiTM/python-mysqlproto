@@ -74,6 +74,7 @@ class MysqlStreamWriter:
             seq = self._seq
 
         ldata = struct.pack("<HBB", l, 0, seq)
+        print("=> seq", seq)
         self._inner.write(ldata)
         self._inner.write(data)
 
