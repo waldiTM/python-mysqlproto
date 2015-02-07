@@ -2,7 +2,8 @@ import asyncio
 import logging
 
 from mysqlproto.protocol import start_mysql_server
-from mysqlproto.protocol.handshake import HandshakeV10, HandshakeResponse41
+from mysqlproto.protocol.flags import Capability
+from mysqlproto.protocol.handshake import HandshakeV10, HandshakeResponse41, AuthSwitchRequest
 
 
 @asyncio.coroutine
@@ -12,12 +13,26 @@ def accept_server(server_reader, server_writer):
 
 @asyncio.coroutine
 def handle_server(server_reader, server_writer):
+    seq = 0
+
     handshake = HandshakeV10()
-    handshake.write(server_writer)
+    handshake.write(server_writer, seq)
+    seq += 1
     yield from server_writer.drain()
 
-    handshake_response = yield from HandshakeResponse41.read(server_reader.packet(1), handshake.capability)
+    handshake_response = yield from HandshakeResponse41.read(server_reader.packet(seq), handshake.capability)
+    seq += 1
     print("<=", handshake_response.__dict__)
+
+    if (Capability.PLUGIN_AUTH in handshake_response.capability_effective and
+            handshake.auth_plugin != handshake_response.auth_plugin):
+        AuthSwitchRequest().write(server_writer, seq)
+        seq += 1
+        yield from server_writer.drain()
+
+        auth_response = yield from server_reader.packet(seq).read()
+        seq += 1
+        print("<=", auth_response)
 
     data = (b'\x00' +
             b'\x00' +
@@ -25,7 +40,7 @@ def handle_server(server_reader, server_writer):
             b'\x02\x00' +
             b'\x00\x00')
     print("=>", data)
-    server_writer.write(2, data)
+    server_writer.write(seq, data)
     yield from server_writer.drain()
 
     while True:
