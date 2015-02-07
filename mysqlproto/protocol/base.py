@@ -46,3 +46,23 @@ class ERR:
         stream.write(seq, p)
 
         print("=>", p)
+
+
+class EOF:
+    def __init__(self, capability, status, warnings=0):
+        self.status = status
+        self.warnings = warnings
+
+    def write(self, stream, seq):
+        status_warnings = struct.pack('<HH', self.warnings, self.status.int)
+
+        packet = [
+            b'\xfe',
+            status_warnings,
+            self.info.encode('ascii'),
+        ]
+
+        p = b''.join(packet)
+        stream.write(seq, p)
+
+        print("=>", p)
