@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from mysqlproto.protocol import start_mysql_server
+from mysqlproto.protocol.base import OK, ERR
 from mysqlproto.protocol.flags import Capability
 from mysqlproto.protocol.handshake import HandshakeV10, HandshakeResponse41, AuthSwitchRequest
 
@@ -24,7 +25,9 @@ def handle_server(server_reader, server_writer):
     seq += 1
     print("<=", handshake_response.__dict__)
 
-    if (Capability.PLUGIN_AUTH in handshake_response.capability_effective and
+    capability = handshake_response.capability_effective
+
+    if (Capability.PLUGIN_AUTH in capability and
             handshake.auth_plugin != handshake_response.auth_plugin):
         AuthSwitchRequest().write(server_writer, seq)
         seq += 1
@@ -34,25 +37,19 @@ def handle_server(server_reader, server_writer):
         seq += 1
         print("<=", auth_response)
 
-    data = (b'\x00' +
-            b'\x00' +
-            b'\x00' +
-            b'\x02\x00' +
-            b'\x00\x00')
-    print("=>", data)
-    server_writer.write(seq, data)
+    result = OK(capability, handshake.status)
+    result.write(server_writer, seq)
     yield from server_writer.drain()
 
     while True:
-        data = yield from server_reader.packet(0).read()
+        seq = 0
+
+        data = yield from server_reader.packet(seq).read()
+        seq += 1
         print("<=", data)
 
-        data = (b'\xff' +
-                b'\x48\x04' +
-                b'#HY000' +
-                b'Go away')
-        print("=>", data)
-        server_writer.write(1, data)
+        result = ERR(capability)
+        result.write(server_writer, seq)
         yield from server_writer.drain()
 
 
