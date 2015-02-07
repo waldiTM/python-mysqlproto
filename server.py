@@ -44,11 +44,22 @@ def handle_server(server_reader, server_writer):
     while True:
         seq = 0
 
-        data = yield from server_reader.packet(seq).read()
+        packet = server_reader.packet(seq)
         seq += 1
-        print("<=", data)
+        cmd = (yield from packet.read(1))[0]
+        print("<=", cmd)
 
-        result = ERR(capability)
+        if cmd == 1:
+            return
+
+        elif cmd == 3:
+            query = (yield from packet.read()).decode('ascii')
+            print("<=   query:", query)
+            result = OK(capability, handshake.status)
+
+        else:
+            result = ERR(capability)
+
         result.write(server_writer, seq)
         yield from server_writer.drain()
 
