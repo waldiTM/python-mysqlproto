@@ -24,7 +24,7 @@ class HandshakeV10:
 
         self.auth_plugin = 'mysql_clear_password'
 
-    def write(self, stream, seq):
+    def write(self, stream):
         capability = struct.pack('<I', self.capability.int)
         status = struct.pack('<H', self.status.int)
 
@@ -49,7 +49,7 @@ class HandshakeV10:
             packet.extend((self.auth_plugin.encode('ascii'), b'\x00'))
 
         p = b''.join(packet)
-        stream.write(p, seq)
+        stream.write(p)
 
         from codecs import encode
         print("=>", p)
@@ -115,13 +115,13 @@ class AuthSwitchRequest:
     def __init__(self):
         self.auth_plugin = 'mysql_clear_password'
 
-    def write(self, stream, seq):
+    def write(self, stream):
         packet = [
             b'\xfe',
             self.auth_plugin.encode('ascii'), b'\x00',
         ]
 
         p = b''.join(packet)
-        stream.write(p, seq)
+        stream.write(p)
 
         print("=>", p)

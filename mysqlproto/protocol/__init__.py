@@ -2,13 +2,33 @@ import asyncio
 import struct
 
 
+class _MysqlStreamSequence:
+    __slots__ = '_seq'
+
+    def __init__(self):
+        self._seq = 0
+
+    def check(self, seq):
+        if seq != self._seq:
+            raise RuntimeError('Wrong sequence, expected {}, got {}'.format(self._seq, seq))
+        return self.incr()
+
+    def incr(self):
+        seq = self._seq
+        self._seq = (seq + 1) & 0xff
+        return seq
+
+    def reset(self):
+        self._seq = 0
+
+
 class MysqlPacketReader:
-    __slots__ = '_stream', '__length', '__seq_next', '__follow'
+    __slots__ = '_stream', '_seq', '__length', '__follow'
 
     def __init__(self, stream, seq):
         self._stream = stream
+        self._seq = seq
         self.__length = 0
-        self.__seq_next = seq
         self.__follow = True
 
     def _check_lead(self, ldata):
@@ -18,11 +38,9 @@ class MysqlPacketReader:
         l1, l2, seq = struct.unpack("<HBB", ldata)
         l = l1 + (l2 << 16)
 
-        if seq != self.__seq_next:
-            raise RuntimeError('Wrong sequence, expected {}, got {}'.format(self.__seq_next, seq))
+        self._seq.check(seq)
 
         self.__length = l
-        self.__seq_next += 1
         if l < 0xffffff:
             self.__follow = False
 
@@ -44,19 +62,22 @@ class MysqlPacketReader:
 
 
 class MysqlStreamReader:
-    __slots__ = '_inner'
+    __slots__ = '_inner', '_seq'
 
-    def __init__(self, inner):
+    def __init__(self, inner, seq):
         self._inner = inner
+        self._seq = seq
 
-    def packet(self, seq):
-        return MysqlPacketReader(self._inner, seq)
+    def packet(self):
+        return MysqlPacketReader(self._inner, self._seq)
 
 
 class MysqlStreamWriter:
-    def __init__(self, inner):
+    __slots__ = '_inner', '_seq'
+
+    def __init__(self, inner, seq):
         self._inner = inner
-        self._seq = 0
+        self._seq = seq
 
     def close(self):
         self._inner.close()
@@ -65,20 +86,17 @@ class MysqlStreamWriter:
     def drain(self):
         return self._inner.drain()
 
-    def write(self, data, seq=None):
+    def reset(self):
+        self._seq.reset()
+
+    def write(self, data):
         l = len(data)
         if l >= 0xffff:
             raise NotImplementedError
 
-        if seq is None:
-            seq = self._seq
-
-        ldata = struct.pack("<HBB", l, 0, seq)
-        print("=> seq", seq)
+        ldata = struct.pack("<HBB", l, 0, self._seq.incr())
         self._inner.write(ldata)
         self._inner.write(data)
-
-        self._seq = (seq + 1) & 0xff
 
 
 
@@ -86,8 +104,9 @@ class MysqlStreamWriter:
 def start_mysql_server(client_connected_cb, host=None, port=None, **kwds):
     @asyncio.coroutine
     def cb(reader, writer):
-        reader_m = MysqlStreamReader(reader)
-        writer_m = MysqlStreamWriter(writer)
+        seq = _MysqlStreamSequence()
+        reader_m = MysqlStreamReader(reader, seq)
+        writer_m = MysqlStreamWriter(writer, seq)
         return client_connected_cb(reader_m, writer_m)
 
     return asyncio.start_server(cb, host, port, **kwds)
