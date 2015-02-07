@@ -8,7 +8,9 @@ class IntLengthEncoded:
 
     @classmethod
     def write(cls, data):
-        if data < 251:
+        if data < 0:
+            raise ValueError
+        elif data < 251:
             return bytes((data, ))
         elif data < 2**16:
             return cls._len_2.pack(b'\xfc', data)
@@ -17,7 +19,7 @@ class IntLengthEncoded:
         elif data < 2**64:
             return cls._len_8.pack(b'\xfe', data)
         else:
-            raise OverflowError
+            raise ValueError
 
 
 class StringLengthEncoded:
