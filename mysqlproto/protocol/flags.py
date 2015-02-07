@@ -46,6 +46,7 @@ class _EnumSet(set):
         ret = 0
         for i in self:
             ret |= i.value
+        return ret
 
     @int.setter
     def int(self, data):

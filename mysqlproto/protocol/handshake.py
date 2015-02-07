@@ -5,7 +5,56 @@ from .flags import Capability, CapabilitySet, Status, StatusSet, CharacterSet
 
 
 class HandshakeV10:
-    pass
+    def __init__(self):
+        self.server_version = '0alpha'
+
+        self.capability = CapabilitySet((
+            Capability.LONG_PASSWORD,
+            Capability.LONG_FLAG,
+            Capability.CONNECT_WITH_DB,
+            Capability.PROTOCOL_41,
+            Capability.TRANSACTIONS,
+            Capability.SECURE_CONNECTION,
+#            Capability.PLUGIN_AUTH,
+        ))
+        self.status = StatusSet((
+            Status.STATUS_AUTOCOMMIT,
+        ))
+        self.character_set = CharacterSet.utf8
+
+        self.auth_plugin = 'mysql_native_password'
+
+    def write(self, stream):
+        capability = struct.pack('<I', self.capability.int)
+        status = struct.pack('<H', self.status.int)
+
+        packet = [
+            b'\x0a',
+            self.server_version.encode('ascii'), b'\x00',
+            b'\x00'*4,
+            b'\x01'*8,
+            b'\x00',
+            capability[:2],
+            bytes((self.character_set.value, )),
+            status,
+            capability[2:],
+            b'\x00',
+            b'\x01'*10,
+        ]
+
+        if Capability.SECURE_CONNECTION in self.capability:
+            packet.append(b'\x00'*13)
+
+        if Capability.PLUGIN_AUTH in self.capability:
+            packet.extend((self.auth_plugin.encode('ascii'), b'\x00'))
+
+        p = b''.join(packet)
+        stream.write(0, p)
+
+        from codecs import encode
+        print("=>", p)
+        print("=>  capability", encode(capability, 'hex'))
+        print("=>  status", encode(status, 'hex'))
 
 
 class HandshakeResponse41:

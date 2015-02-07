@@ -2,8 +2,7 @@ import asyncio
 import logging
 
 from mysqlproto.protocol import start_mysql_server
-from mysqlproto.protocol.flags import Capability, CapabilitySet
-from mysqlproto.protocol.handshake import HandshakeResponse41
+from mysqlproto.protocol.handshake import HandshakeV10, HandshakeResponse41
 
 
 @asyncio.coroutine
@@ -13,26 +12,12 @@ def accept_server(server_reader, server_writer):
 
 @asyncio.coroutine
 def handle_server(server_reader, server_writer):
-    capability = CapabilitySet()
-    capability.int = 0xa21f
-    data = (b'\x0a'+
-            b'5.5\x00' +
-            b'\x00\x00\x00\x00' +
-            b'\x01'*8 + 
-            b'\x00' + 
-            b'\x1f\xa2' +
-            b'\x21' +
-            b'\x00\x00' +
-            b'\x00\x00' +
-            b'\x00'+
-            b'\x00'*10 +
-            b'\x01'*12 + b'\x00')
-    print("=>", data)
-    server_writer.write(0, data)
+    handshake = HandshakeV10()
+    handshake.write(server_writer)
     yield from server_writer.drain()
 
-    data = yield from HandshakeResponse41.read(server_reader.packet(1), capability)
-    print("<=", data.__dict__)
+    handshake_response = yield from HandshakeResponse41.read(server_reader.packet(1), handshake.capability)
+    print("<=", handshake_response.__dict__)
 
     data = (b'\x00' +
             b'\x00' +
