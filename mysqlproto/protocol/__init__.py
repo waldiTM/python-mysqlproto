@@ -56,6 +56,7 @@ class MysqlStreamReader:
 class MysqlStreamWriter:
     def __init__(self, inner):
         self._inner = inner
+        self._seq = 0
 
     def close(self):
         self._inner.close()
@@ -64,13 +65,19 @@ class MysqlStreamWriter:
     def drain(self):
         return self._inner.drain()
 
-    def write(self, sequence, data):
+    def write(self, data, seq=None):
         l = len(data)
-        if l >= 0xffffff:
+        if l >= 0xffff:
             raise NotImplementedError
-        ldata = struct.pack("<HBB", l, 0, sequence)
+
+        if seq is None:
+            seq = self._seq
+
+        ldata = struct.pack("<HBB", l, 0, seq)
         self._inner.write(ldata)
         self._inner.write(data)
+
+        self._seq = (seq + 1) & 0xff
 
 
 

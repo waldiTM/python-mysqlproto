@@ -49,7 +49,7 @@ class HandshakeV10:
             packet.extend((self.auth_plugin.encode('ascii'), b'\x00'))
 
         p = b''.join(packet)
-        stream.write(seq, p)
+        stream.write(p, seq)
 
         from codecs import encode
         print("=>", p)
@@ -122,6 +122,6 @@ class AuthSwitchRequest:
         ]
 
         p = b''.join(packet)
-        stream.write(seq, p)
+        stream.write(p, seq)
 
         print("=>", p)

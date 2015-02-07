@@ -22,7 +22,7 @@ class OK:
         ]
 
         p = b''.join(packet)
-        stream.write(seq, p)
+        stream.write(p, seq)
 
         print("=>", p)
 
@@ -43,7 +43,7 @@ class ERR:
         ]
 
         p = b''.join(packet)
-        stream.write(seq, p)
+        stream.write(p, seq)
 
         print("=>", p)
 
@@ -63,6 +63,6 @@ class EOF:
         ]
 
         p = b''.join(packet)
-        stream.write(seq, p)
+        stream.write(p, seq)
 
         print("=>", p)
