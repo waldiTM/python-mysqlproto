@@ -45,6 +45,11 @@ class MysqlPacketReader:
             self.__follow = False
 
     @asyncio.coroutine
+    def close(self):
+        while (yield from self.read()):
+            pass
+
+    @asyncio.coroutine
     def read(self, size=None):
         if not self.__length:
             if self.__follow:
@@ -95,8 +100,7 @@ class MysqlStreamWriter:
             raise NotImplementedError
 
         ldata = struct.pack("<HBB", l, 0, self._seq.incr())
-        self._inner.write(ldata)
-        self._inner.write(data)
+        self._inner.write(ldata + data)
 
 
 
