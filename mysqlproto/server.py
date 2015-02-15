@@ -29,9 +29,11 @@ class MysqlServer:
         yield from self.connection_lost(exc)
 
     @classmethod
-    @asyncio.coroutine
-    def factory(cls, reader, writer):
-        yield from cls(reader, writer)
+    def factory(cls, *args, **kw):
+        @asyncio.coroutine
+        def cb(reader, writer):
+            yield from cls(reader, writer, *args, **kw)
+        return cb
 
     @asyncio.coroutine
     def do_handshake(self):
