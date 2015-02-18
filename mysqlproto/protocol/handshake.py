@@ -97,8 +97,10 @@ class HandshakeResponse41:
 
         if Capability.CONNECT_WITH_DB in ret.capability_effective:
             end = data.index(b'\x00', cur)
-            ret.database = data[cur:end]
+            ret.schema = data[cur:end].decode('ascii')
             cur = end + 1
+        else:
+            ret.schema = None
 
         if Capability.PLUGIN_AUTH in ret.capability_effective:
             end = data.index(b'\x00', cur)
