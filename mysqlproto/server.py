@@ -17,8 +17,8 @@ class MysqlServer:
     def __iter__(self):
         exc = None
 
-        yield from self.do_handshake()
-        yield from self.connection_made()
+        info = yield from self.do_handshake()
+        yield from self.connection_made(*info)
 
         try:
             yield from self.do_commands()
@@ -58,6 +58,8 @@ class MysqlServer:
         result.write(self.writer)
         yield from self.writer.drain()
 
+        return handshake_response.user, handshake_response.schema
+
     @asyncio.coroutine
     def do_commands(self):
         while True:
@@ -89,7 +91,7 @@ class MysqlServer:
             result.write(self.writer)
             yield from self.writer.drain()
 
-    def connection_made(self):
+    def connection_made(self, user, schema):
         yield
 
     def connection_lost(self, exp):
