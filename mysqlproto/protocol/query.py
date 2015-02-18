@@ -27,18 +27,16 @@ class ColumnDefinition:
 
         p = b''.join(packet)
         stream.write(p)
-        print("=> ColumnDefinition", p)
 
 
 class ColumnDefinitionList:
-    def __init__(self, columns):
-        self.columns = columns
+    def __init__(self, columns=None):
+        self.columns = columns or []
 
     def write(self, stream):
         p = IntLengthEncoded.write(len(self.columns))
 
         stream.write(p)
-        print("=> ColumnDefinitionList", p)
 
         for i in self.columns:
             i.write(stream)
@@ -57,8 +55,7 @@ class ResultSet:
             if i is None:
                 packet.append(b'\xfb')
             else:
-                packet.append(s(i.encode('ascii')))
+                packet.append(s(str(i).encode('ascii')))
 
         p = b''.join(packet)
         stream.write(p)
-        print("=> ResultSet", p)
