@@ -51,11 +51,6 @@ class HandshakeV10:
         p = b''.join(packet)
         stream.write(p)
 
-        from codecs import encode
-        print("=>", p)
-        print("=>  capability", encode(capability, 'hex'))
-        print("=>  status", encode(status, 'hex'))
-
 
 class HandshakeResponse41:
     _packet_1 = struct.Struct('<IIB23x')
@@ -67,7 +62,6 @@ class HandshakeResponse41:
     @asyncio.coroutine
     def read(cls, packet, capability_announced):
         data = yield from packet.read()
-        print("<=", repr(data))
 
         ret = cls()
 
@@ -125,5 +119,3 @@ class AuthSwitchRequest:
 
         p = b''.join(packet)
         stream.write(p)
-
-        print("=>", p)

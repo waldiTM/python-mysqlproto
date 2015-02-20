@@ -24,8 +24,6 @@ class OK:
         p = b''.join(packet)
         stream.write(p)
 
-        print("=>", p)
-
 
 class ERR:
     def __init__(self, capability, sql_state='HY000', error=1096, error_msg='Go away'):
@@ -45,8 +43,6 @@ class ERR:
         p = b''.join(packet)
         stream.write(p)
 
-        print("=>", p)
-
 
 class EOF:
     def __init__(self, capability, status, warnings=0):
@@ -63,5 +59,3 @@ class EOF:
 
         p = b''.join(packet)
         stream.write(p)
-
-        print("=>", p)

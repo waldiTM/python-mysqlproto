@@ -52,7 +52,6 @@ class MysqlServer:
             yield from self.writer.drain()
 
             auth_response = yield from self.reader.packet().read()
-            print("<=", auth_response)
 
         result = OK(self.capability, handshake.status)
         result.write(self.writer)
@@ -69,7 +68,6 @@ class MysqlServer:
 
             try:
                 cmd = (yield from packet.read(1))[0]
-                print("<=", cmd)
 
                 if cmd == 1:
                     return
